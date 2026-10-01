@@ -80,3 +80,52 @@ test("el tema oscuro cambia el fondo del documento", async ({ page }) => {
     .poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor))
     .not.toBe(inicial);
 });
+
+/**
+ * El fallo que cubre esto aparecio ya desplegado.
+ *
+ * La seccion Stack ponia seis grupos de ancho fijo (18rem) en una sola fila de
+ * `flex-row`. Seis por 18rem son 108rem: en un viewport de 1280px el documento
+ * llegaba a 2112px de scroll y las dos últimas columnas quedaban fuera de
+ * pantalla. El build estaba verde, los 41 tests de contenido y los de
+ * accesibilidad pasaban, y el sitio se veía "bien" en la captura de desktop
+ * grande. En un portatil es un scroll horizontal que corta contenido.
+ *
+ * Ni axe ni los tests de contenido miran geometria, asi que hace falta medirlo.
+ */
+const VIEWPORTS = [
+  { name: "portatil", width: 1280, height: 800 },
+  { name: "sobremesa", width: 1680, height: 1050 },
+  { name: "tablet", width: 834, height: 1112 },
+  { name: "movil", width: 390, height: 844 },
+];
+
+for (const vp of VIEWPORTS) {
+  for (const route of ROUTES) {
+    test(`${route.label} no desborda en ${vp.name} (${vp.width}px)`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.goto(route.path);
+
+      const medidas = await page.evaluate(() => {
+        const doc = document.documentElement;
+        // Se ignoran los 2px de tolerancia del subpixel: sin ellos el test
+        // falla en pantallas con factor de escala y nadie lo investigates.
+        const desborda = doc.scrollWidth > window.innerWidth + 2;
+        const culpables = Array.from(document.querySelectorAll<HTMLElement>("body *"))
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.right > window.innerWidth + 2;
+          })
+          .slice(0, 3)
+          .map((el) => `${el.tagName}.${(el.className?.toString?.() ?? "").slice(0, 60)}`);
+        return { scrollWidth: doc.scrollWidth, innerWidth: window.innerWidth, desborda, culpables };
+      });
+
+      expect(
+        medidas.desborda,
+        `${route.path} a ${vp.width}px: scrollWidth ${medidas.scrollWidth} > ${medidas.innerWidth}. ` +
+          `Elementos que se salen: ${medidas.culpables.join(" | ")}`,
+      ).toBe(false);
+    });
+  }
+}

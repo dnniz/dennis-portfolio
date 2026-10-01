@@ -20,9 +20,17 @@ import { Reveal, Section } from "./section";
 export function Stack({ t, groups, locale }: { t: T["stack"]; groups: StackGroup[]; locale: Locale }) {
   return (
     <Section id="stack" heading={t.heading} lead={t.lead}>
-      <div className="flex flex-col gap-10 lg:flex-row lg:gap-16">
+      {/*
+        Rejilla y no fila de flex. Con seis grupos, `flex-row` con anchos fijos
+        de 18rem necesita 108rem: en un portatil de 1280px eso desborda 832px y
+        el scroll horizontal corta las dos ultimas columnas. Ademas las columnas
+        quedan pegadas a la izquierda y el bloque se descentra.
+        Dos filas de tres a 1152px dejan holgura, que es lo que se busca en una
+        rejilla de etiquetas cortas.
+      */}
+      <div className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((group, gi) => (
-          <Reveal key={group.id} delay={Math.min(gi, 4) * 0.04} className="lg:w-[18rem] lg:shrink-0">
+          <Reveal key={group.id} delay={Math.min(gi, 4) * 0.04}>
             <h3 className="font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-faint)]">
               {group.label[locale]}
             </h3>
