@@ -1,0 +1,11 @@
+# pnpm lee la configuracion de builds permitidos desde aqui, no desde el
+# campo `pnpm` de package.json (obsoleto en pnpm 10, eliminado en 12).
+#
+# esbuild lo compila tailwindcss y next usa su binario nativo para swc. Sin
+# declararlos aqui, `pnpm install` aborta con ERR_PNPM_IGNORED_BUILDS.
+#
+# El valor es un MAPA de nombre -> true, no una lista. pnpm 12 rechaza la
+# forma de lista con "expected mapping start" al parsear este archivo.
+allowBuilds:
+  esbuild: true
+  sharp: true

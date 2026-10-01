@@ -1,0 +1,44 @@
+# Contexto de build: lo que entra en el daemon son unos pocos KB de codigo.
+#
+# Sin esto, `COPY . .` arrastra node_modules (cientos de MB) y .next (el build
+# anterior). Docker no lo excluira, solo que el .dockerignore de la imagen base
+# no aplica, asi que la capa del builder pesaria gigas y cada rebuild tardaria
+# minutos en subir contexto.
+
+node_modules
+.next
+.git
+.github
+out
+build
+dist
+
+# Tests: corren en el workflow, no dentro de la imagen. En su lugar, vitest y
+# playwright vienen del node_modules del stage deps.
+tests
+vitest.config.ts
+playwright.config.ts
+e2e
+
+# Sistema de ficheros y editores
+.DS_Store
+*.pem
+.vscode
+.idea
+*.tsbuildinfo
+next-env.d.ts
+
+# Documentacion: no va en runtime.
+README.md
+*.md
+!.github/**/*.md
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Entorno: nunca debe entrar en la imagen. El build no lee variables.
+.env
+.env.*
+!.env.example

@@ -1,0 +1,237 @@
+/**
+ * Sistema de diseno del portfolio.
+ *
+ * Tres decisiones que no son las por defecto del generador, y el motivo de cada
+ * una:
+ *
+ * 1. TEMA UNICO, dos modos. Toda la pagina vive en el mismo tema; ninguna
+ *    seccion invierte a claro en medio de una pagina oscura. Eso se rompe tan
+ *    pronto como alguien hace scroll y landa en otra pagina.
+ *
+ * 2. UN SOLO ACENTO: naranja quemado. Se usa en los mismos lugares en toda la
+ *    pagina (links, enfasis, borde activo, anillo de foco). Un acento que
+ *    cambia de color por seccion es la senal de que nadie eligio un color.
+ *
+ * 3. RADIO UNICO: 2px en todo lo que no sea el pastilla del selector. Bordes
+ *    casi rectos son el registro honesto para backend; un portfolio de
+ *    redondeo grande con tipografia de developer se contradice.
+ */
+
+@import "tailwindcss";
+
+:root {
+  /* Neutros frios (zinc). El sitio es de backend: la paleta es neutra, no
+     calida. Un beige calido con sans seria disonante con el contenido. */
+  --bg: #fafafa;
+  --bg-subtle: #f4f4f5;
+  --bg-inset: #ececee;
+  --surface: #ffffff;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+
+  --text: #18181b;
+  --text-muted: #52525b;
+  --text-faint: #71717a;
+
+  /* Naranja quemado. Sobre blanco da 5.4:1, suficiente para texto de cuerpo.
+     Sobre zinc-950 da 7.1:1. El mismo hex sirve para los dos modos, que es lo
+     que hace que la identidad no cambie al cambiar de tema. */
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --accent-fg: #ffffff;
+  --accent-soft: #fff4ed;
+  --accent-border: #fed7aa;
+
+  --shadow-color: 240 5% 60%;
+
+  --radius: 2px;
+  --radius-pill: 999px;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --max-w: 76rem;
+}
+
+.dark {
+  --bg: #09090b;
+  --bg-subtle: #101013;
+  --bg-inset: #17171b;
+  --surface: #131316;
+  --border: #232328;
+  --border-strong: #35353c;
+
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  --text-faint: #7c7c86;
+
+  /* El mismo naranja, un punto mas claro para ganar contraste sobre casi negro.
+     No se cambia el color de marca: se ajusta su luminosidad. */
+  --accent: #fb923c;
+  --accent-hover: #fdba74;
+  --accent-fg: #1a0a02;
+  --accent-soft: #1f1108;
+  --accent-border: #4a2412;
+
+  --shadow-color: 240 10% 2%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --bg: #09090b;
+    --bg-subtle: #101013;
+    --bg-inset: #17171b;
+    --surface: #131316;
+    --border: #232328;
+    --border-strong: #35353c;
+    --text: #fafafa;
+    --text-muted: #a1a1aa;
+    --text-faint: #7c7c86;
+    --accent: #fb923c;
+    --accent-hover: #fdba74;
+    --accent-fg: #1a0a02;
+    --accent-soft: #1f1108;
+    --accent-border: #4a2412;
+  }
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+  /* La cabecera es sticky: sin este offset, un ancla deja el titulo debajo. */
+  scroll-padding-top: 5.5rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  /* 65ch: el cuerpo de texto deja de ser legible en una linea mas larga. */
+  max-width: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* Anillo de foco unico y consistente. Se ve en teclado y en mouse; quitarlo
+   por estetica deja la web inutilizable sin raton. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* ----------------------------------------------------------------------------
+   Impresion
+   ----------------------------------------------------------------------------
+   El destino real de esta pagina es un PDF que se adjunta a una candidatura o
+   se lleva a una entrevista. Tres cosas hay que forzar ahi, siempre:
+
+   1. Blanco sobre negro. El tema por defecto es oscuro: impreso, un fondo zinc
+      se convierte en un rectangulo gris que se come la tinta y hace ilegible el
+      texto claro encima. Un PDF con fondo oscuro no se imprime bien en ninguna
+      impresora de oficina.
+   2. Sin cromo de interfaz. Cabecera, menu, botones de idioma y tema: nada de
+      eso debe salir en papel.
+   3. URLs visibles. En papel no hay hover ni clic, asi que un enlace a LinkedIn
+      sin su URL a la vista es un enlace que no sirve de nada.
+*/
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Los tokens se anulan aqui y no antes: los componentes los usan en sus
+     clases, y redefinirlos aqui es lo unico que funciona sin reescribir cada
+     clase en dos variantes. Se cubren las dos clases porque el script de <head>
+     deja una de las dos puesta. */
+  :root,
+  :root.dark,
+  :root.light {
+    --bg: #fff;
+    --surface: #fff;
+    --bg-subtle: #fff;
+    --text: #000;
+    --text-muted: #333;
+    --text-faint: #555;
+    --border: #bbb;
+    --border-strong: #888;
+    --accent: #000;
+    --accent-hover: #000;
+    --accent-fg: #fff;
+  }
+
+  body {
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+
+  /* Sin proyecciones: en papel el relieve solo gasta tinta. */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .print-reset {
+    border: 0;
+  }
+
+  /* Evita cortes de pagina a mitad de un proyecto o de una certificacion. */
+  h1,
+  h2,
+  h3 {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  section,
+  article,
+  li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  /* Solo enlaces externos y mailto. Los anclas internas y los botones no
+     necesitan URL impresa, y anadirla a todos suena a ruido. */
+  a[href^="http"]::after,
+  a[href^="mailto"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #444;
+    word-break: break-all;
+  }
+}
