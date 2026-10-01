@@ -225,3 +225,66 @@ describe("contraste WCAG AA", () => {
     });
   });
 });
+
+describe("el build sobrevive a la imagen Alpine", () => {
+  /**
+   * Este test existe por un fallo que solo aparece en produccion.
+   *
+   * `node:22-alpine` no trae bash. El script `build` era
+   * `next build && bash scripts/copy-public.sh`, y en Docker reventaba con
+   * `sh: bash: not found` y exit 127. Local funcionaba porque la maquina de
+   * desarrollo si tiene bash, el build de `next build` habia terminado bien
+   * justo antes, y los 37 tests de contenido seguian verdes: ninguno mira el
+   * shell con el que se invoca un script.
+   *
+   * La leccion es que "funciona en local" no es evidencia de nada cuando la
+   * imagen base es distinta. Este test lee el shebang y los scripts de
+   * package.json, que es donde se decide que shell se usa.
+   */
+  const scriptsDir = join(SRC, "scripts");
+
+  it("los scripts que se ejecutan dentro de la imagen son POSIX", () => {
+    // `fetch-logos.sh` si usa bash a proposito: arrays, `local` y `pipefail`, y
+    // corre solo en la maquina de desarrollo para bajar los SVG. No entra en
+    // Docker jamas, asi que no se toca. Lo que no se permite es que un script
+    // QUE SE EJECUTA EN EL BUILD necesite bash, porque ahi el shell es el de
+    // la imagen y no hay bash.
+    const soloLocal = new Set(["fetch-logos.sh"]);
+
+    const offenders = readdirSync(scriptsDir)
+      .filter((f) => f.endsWith(".sh"))
+      .filter((f) => !soloLocal.has(f))
+      // Solo la primera linea: los comentarios explican por que el script ES
+      // POSIX y mencionan bash, y leer el fichero entero daria un falso positivo.
+      .filter((f) => /^#!.*\bbash\b/.test(readFileSync(join(scriptsDir, f), "utf8")));
+
+    expect(offenders, `estos scripts del build piden bash, que Alpine no trae: ${offenders.join(", ")}`)
+      .toEqual([]);
+  });
+
+  it("el script build no invoca bash, porque el shell del build es el de Alpine", () => {
+    const pkg = JSON.parse(readFileSync(join(SRC, "package.json"), "utf8")) as {
+      scripts: Record<string, string>;
+    };
+    expect(pkg.scripts.build).not.toMatch(/(^|[\s;&|])bash\s/);
+    // Y no basta con quitar `bash`: el shebang del script invocado tiene que
+    // ser ejecutable en Alpine, o el fallo reaparece un nivel mas abajo.
+    expect(pkg.scripts.build).toMatch(/\bsh\s+scripts\/copy-public\.sh/);
+  });
+
+  it("el Dockerfile declara una imagen base de la que sabemos que existe", () => {
+    const dockerfile = readFileSync(join(SRC, "Dockerfile"), "utf8");
+    // El fallo espejo: fijar `node:latest` hace que una actualizacion de la
+    // imagen cambie el runtime sin que cambie el codigo.
+    expect(dockerfile).toMatch(/FROM node:\$\{NODE_VERSION\}-alpine/);
+    expect(dockerfile).not.toMatch(/FROM node:latest/);
+  });
+
+  it("el stage builder tiene bash por si el build llegara a pedirlo", () => {
+    // Red de seguridad, no la solucion. El build ya no lo necesita; si alguien
+    // lo reintroduce, este test obliga a instalar bash en el mismo commit.
+    const dockerfile = readFileSync(join(SRC, "Dockerfile"), "utf8");
+    const builder = dockerfile.split("AS builder")[1]?.split("FROM")[0] ?? "";
+    expect(builder).toMatch(/apk add[^\n]*bash/);
+  });
+});

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Prepara `.next/standalone/` para que se pueda ejecutar tal cual.
 #
 # Por que hace falta. Con `output: "standalone"`, Next genera un server.js que
@@ -20,17 +20,26 @@
 # Se probo `outputFileTracingIncludes` en next.config.mjs y en Next 16.3.7 no
 # copia ni `public/` ni `.next/static/`. La copia manual es lo que funciona, y
 # es la misma que hace el stage runner del Dockerfile.
-set -euo pipefail
+#
+# Se escribe en POSIX sh y no en bash a proposito. `node:22-alpine` no trae
+# bash: la imagen de Denux-site-web tampoco lo trae y por eso no falla. Un
+# `#!/usr/bin/env bash` aqui aborta el build en Alpine con `sh: bash: not
+# found` y exit 127, DESPUES de que `next build` haya terminado bien. Local
+# funciona y en Docker no, porque el shell de la maquina de desarrollo si tiene
+# bash y la imagen no.
+set -eu
 
 cd "$(dirname "$0")/.."
 
 if [ ! -d ".next/standalone" ]; then
-  echo "error: no existe .next/standalone. ¿Ha corrido 'next build'?" >&2
+  echo "error: no existe .next/standalone. Ha corrido 'next build'?" >&2
   exit 1
 fi
 
 copiar() {
-  local src="$1" dst="$2" etiqueta="$3"
+  src="$1"
+  dst="$2"
+  etiqueta="$3"
 
   if [ ! -d "$src" ]; then
     echo "aviso: no existe $src, nada que copiar ($etiqueta)" >&2

@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "pnpm typecheck && pnpm test",
-    "build": "next build && bash scripts/copy-public.sh",
+    "build": "next build && sh scripts/copy-public.sh",
     "build:ci": "pnpm check && pnpm build",
     "start": "next start",
     "test:e2e": "playwright test",

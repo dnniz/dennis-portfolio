@@ -60,6 +60,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# `node:22-alpine` no trae bash. El script de build invoca `sh`, no `bash`, por
+# eso esto no es imprescindible hoy; se instala igualmente porque el healthcheck
+# del runner y cualquier script de Diagnostico posterior se ejecutan con este
+# mismo shell, y un fallo aqui aparece como "exit 127" DESPUES de que next build
+# haya terminado bien, que es el peor momento para descubrirlo.
+RUN apk add --no-cache bash
+
 # git no versiona directorios vacios, asi que sin este mkdir el COPY de public/
 # en el runner aborta el build entero. Se crea en el builder, que es la unica
 # forma de que un COPY condicional tenga un origen real.
