@@ -10,10 +10,12 @@
 #    el proceso escucha en el loopback y el proxy responde "no available
 #    server" aunque el contenedor este sano.
 #
-# 2. `public/` y `.next/static/` se copian a mano. El modo standalone no
-#    los incluye, y sin ellos todos los estaticos dan 404. Aqui importa de
-#    verdad: los 23 logos del stack viven en public/logos y sin este COPY el
-#    muro de tecnologias sale entero sin iconos.
+# 2. `public/` y `.next/static/` se copian a mano. El modo standalone no los
+#    incluye, y sin ellos todos los estaticos dan 404. El segundo es el caro:
+#    `.next/static/` son los chunks de CSS y JS, y sin ellos la pagina se
+#    sirve SIN UNA SOLA CLASE DE ESTILO con el build en verde. El primero
+#    importa porque los 22 logos del stack viven en public/logos y sin el COPY
+#    el muro de tecnologias sale entero sin iconos.
 #
 # 3. El tag de Node esta fijado a la version mayor.menor (22-alpine) en vez
 #    de `latest`. Con `latest` una rebase puede cambiar el runtime sin que
